@@ -1,5 +1,8 @@
 A solution that handles stripe webhooks by using AWS http API Gateway, SQS, SQS dead letter queue, and Lambda
 
+Make sure to set up STRIPE_API_KEY environment variable
+Console Command Example: export STRIPE_API_KEY="<api-key>"
+
 Configure hashicorp vault: https://developer.hashicorp.com/vault/tutorials/hcp-vault-secrets-get-started/hcp-vault-secrets-install-cli
 export HCP_CLIENT_ID=<copied-id>
 export HCP_CLIENT_SECRET=<copied-secret>
