@@ -5,7 +5,6 @@
       "Effect" : "Allow",
       "Action" : [
         "sqs:SendMessage",
-        "sqs:SendMessageBatch",
         "sqs:ListQueues"
       ],
       "Resource" : "${sqsarn}"

@@ -205,7 +205,20 @@ resource "aws_api_gateway_stage" "StripeWebhookGatewayStage" {
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.stripe_webhook_APIGW_logGroup.arn
-    format          = "{ \"requestId\":\"$context.requestId\", \"ip\": \"$context.identity.sourceIp\", \"requestTime\":\"$context.requestTime\", \"httpMethod\":\"$context.httpMethod\",\"routeKey\":\"$context.routeKey\", \"status\":\"$context.status\",\"protocol\":\"$context.protocol\", \"responseLength\":\"$context.responseLength\" }"
+    format = join(", ", ["{ \"requestId\":\"$context.requestId\"",
+      "\"ip\":\"$context.identity.sourceIp\"",
+      "\"requestTime\":\"$context.requestTime\"",
+      "\"httpMethod\":\"$context.httpMethod\"",
+      "\"routeKey\":\"$context.routeKey\"",
+      "\"status\":\"$context.status\",\"protocol\":\"$context.protocol\"",
+      "\"responseLength\":\"$context.responseLength\"",
+      "\"authorizererror\":\"$context.authorizer.error\"",
+      "\"errormessage\":\"$context.error.message\"",
+      "\"errormessageString\":\"$context.error.messageString\"",
+      "\"errorresponseType\":\"$context.error.responseType\"",
+      "\"integrationerror\":\"$context.integration.error\"",
+    "\"integrationErrorMessage\":\"$context.integrationErrorMessage\" }"])
+    # format          = "{ \"requestId\":\"$context.requestId\", \"ip\": \"$context.identity.sourceIp\", \"requestTime\":\"$context.requestTime\", \"httpMethod\":\"$context.httpMethod\",\"routeKey\":\"$context.routeKey\", \"status\":\"$context.status\",\"protocol\":\"$context.protocol\", \"responseLength\":\"$context.responseLength\", \"integrationErrorMessage\":\"$context.integrationErrorMessage\" }"
   }
 }
 
