@@ -218,7 +218,6 @@ resource "aws_api_gateway_stage" "StripeWebhookGatewayStage" {
       "\"errorresponseType\":\"$context.error.responseType\"",
       "\"integrationerror\":\"$context.integration.error\"",
     "\"integrationErrorMessage\":\"$context.integrationErrorMessage\" }"])
-    # format          = "{ \"requestId\":\"$context.requestId\", \"ip\": \"$context.identity.sourceIp\", \"requestTime\":\"$context.requestTime\", \"httpMethod\":\"$context.httpMethod\",\"routeKey\":\"$context.routeKey\", \"status\":\"$context.status\",\"protocol\":\"$context.protocol\", \"responseLength\":\"$context.responseLength\", \"integrationErrorMessage\":\"$context.integrationErrorMessage\" }"
   }
 }
 
