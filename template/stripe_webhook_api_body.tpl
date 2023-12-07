@@ -40,7 +40,7 @@
               "integration.request.header.Content-Type" : "'application/x-www-form-urlencoded'"
             },
             "requestTemplates" : {
-              "application/json" : "Action=SendMessage&MessageBody=$input.body"
+              "application/json" : "Action=SendMessage&MessageBody=$input.json('$')"
             },
             "passthroughBehavior" : "never"
           }

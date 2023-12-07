@@ -174,11 +174,82 @@ resource "aws_iam_role_policy_attachment" "APIGWPolicyAttachment" {
 # Create an HTTP API Gateway
 resource "aws_api_gateway_rest_api" "stripe_webhook_api" {
   name = "stripe-webhook-http-api"
-  body = data.template_file.stripe_webhook_api_body.rendered
+  # body = data.template_file.stripe_webhook_api_body.rendered
+  description = "stripe webhook"
+}
+
+#Configure API Gateway resource
+resource "aws_api_gateway_resource" "stripe_webhook_api_resource" {
+  rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
+  parent_id   = aws_api_gateway_rest_api.stripe_webhook_api.root_resource_id
+  path_part   = var.path
+}
+
+#Configure API Gateway method request
+resource "aws_api_gateway_method" "stripe_webhook_api_method" {
+  rest_api_id   = aws_api_gateway_rest_api.stripe_webhook_api.id
+  resource_id   = aws_api_gateway_resource.stripe_webhook_api_resource.id
+  http_method   = "POST"
+  authorization = "NONE"
+  request_parameters = {
+    "method.request.header.stripe-signature" = true,
+  }
+}
+
+#Configure API Gateway integration
+resource "aws_api_gateway_integration" "stripe_webhook_api_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.stripe_webhook_api.id
+  resource_id             = aws_api_gateway_resource.stripe_webhook_api_resource.id
+  http_method             = aws_api_gateway_method.stripe_webhook_api_method.http_method
+  integration_http_method = "POST"
+  type                    = "AWS"
+  # "uri" : "arn:aws:apigateway:${region}:sqs:path/${account_id}/${sqsname}",
+  uri         = join("", ["arn:aws:apigateway:", var.region, ":sqs:path/", data.aws_caller_identity.current.account_id, "/", aws_sqs_queue.stripe_webhook_sqs.name])
+  credentials = aws_iam_role.stripe_webhook_APIGW_to_SQS_Role.arn
+  request_parameters = {
+    "integration.request.header.Content-Type"                              = "'application/x-www-form-urlencoded'"
+    "integration.request.querystring.MessageAttribute.1.Name"              = "'stripeSignature'"
+    "integration.request.querystring.MessageAttribute.1.Value.DataType"    = "'String'"
+    "integration.request.querystring.MessageAttribute.1.Value.StringValue" = "method.request.header.stripe-signature"
+  }
+  request_templates = {
+    "application/json" = "Action=SendMessage&MessageBody=$input.json('$')"
+  }
+  passthrough_behavior = "WHEN_NO_TEMPLATES"
+}
+
+# Configure API Gateway to push all logs to CloudWatch Logs
+resource "aws_api_gateway_method_settings" "StripeWebhookGatewaySettings" {
+  rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
+  stage_name  = aws_api_gateway_stage.StripeWebhookGatewayStage.stage_name
+  method_path = "*/*"
+
+  settings {
+    # Enable CloudWatch logging and metrics
+    metrics_enabled = true
+    logging_level   = "INFO"
+  }
+}
+
+resource "aws_api_gateway_integration_response" "stripe_webhook_api_integration_response" {
+  rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
+  resource_id = aws_api_gateway_resource.stripe_webhook_api_resource.id
+  http_method = aws_api_gateway_method.stripe_webhook_api_method.http_method
+  status_code = aws_api_gateway_method_response.stripe_webhook_api_method_response.status_code
+}
+resource "aws_api_gateway_method_response" "stripe_webhook_api_method_response" {
+  rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
+  resource_id = aws_api_gateway_resource.stripe_webhook_api_resource.id
+  http_method = aws_api_gateway_method.stripe_webhook_api_method.http_method
+  status_code = "200"
+  response_models = {
+    "application/json" = "Empty"
+  }
 }
 
 # Create a new API Gateway deployment for the created rest api
 resource "aws_api_gateway_deployment" "stripe_webhook_api_deployment" {
+  depends_on  = [aws_api_gateway_integration.stripe_webhook_api_integration]
   rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
   lifecycle {
     create_before_destroy = true
@@ -220,25 +291,3 @@ resource "aws_api_gateway_stage" "StripeWebhookGatewayStage" {
     "\"integrationErrorMessage\":\"$context.integrationErrorMessage\" }"])
   }
 }
-
-# Configure API Gateway to push all logs to CloudWatch Logs
-resource "aws_api_gateway_method_settings" "StripeWebhookGatewaySettings" {
-  rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
-  stage_name  = aws_api_gateway_stage.StripeWebhookGatewayStage.stage_name
-  method_path = "*/*"
-
-  settings {
-    # Enable CloudWatch logging and metrics
-    metrics_enabled = true
-    logging_level   = "INFO"
-  }
-}
-
-# resource "stripe_webhook_endpoint" "webhook" {
-#   url         = join("",[aws_api_gateway_stage.StripeWebhookGatewayStage.invoke_url, "/webhook"])
-#   description = "webhook for checkout completion and order fulfillment"
-#   enabled_events = [
-#     "checkout.session.completed"
-#   ]
-# }
-# TODO CREATE stripe endpoint

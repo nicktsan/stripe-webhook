@@ -52,3 +52,8 @@ variable "deps_layer_storage_key" {
   description = "Key of the S3 Object that will store deps lambda layer"
   type        = string
 }
+
+variable "path" {
+  description = "last part of the api gateway url"
+  type        = string
+}

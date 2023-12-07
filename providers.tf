@@ -17,8 +17,3 @@ provider "aws" {
 provider "hcp" {
   # Configuration options
 }
-
-# provider "stripe" {
-#   # Configuration options. You can provide your api-key through the STRIPE_API_KEY environment variable.
-#   # Console Command Example: export STRIPE_API_KEY="<api-key>"
-# }
