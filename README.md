@@ -45,3 +45,6 @@ If you encounter Error: Error acquiring the state lock, use the command below to
 if you know there is no other process manipulating the terraform.tfstate file:
 terraform force-unlock <ID>
 ID should be mentioned somewhere in the error message
+
+to destroy:
+terraform destroy -var-file input.tfvars
