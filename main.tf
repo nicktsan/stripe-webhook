@@ -72,15 +72,15 @@ resource "aws_lambda_function" "stripe_webhook_lambda" {
   runtime          = var.lambda_runtime
   layers = [
     aws_lambda_layer_version.lambda_deps_layer.arn,
-    # aws_lambda_layer_version.lambda_utils_layer.arn
+    aws_lambda_layer_version.lambda_utils_layer.arn
   ]
 
-  # environment {
-  #   variables = {
-  #     # STRIPE_SECRET = jsondecode(data.aws_secretsmanager_secret_version.current.secret_string)[var.stripe_secret_key]
-  #     STRIPE_SECRET = data.hcp_vault_secrets_secret.stripeSecret.secret_value
-  #   }
-  # }
+  environment {
+    variables = {
+      STRIPE_SECRET         = data.hcp_vault_secrets_secret.stripeSecret.secret_value
+      STRIPE_SIGNING_SECRET = data.hcp_vault_secrets_secret.stripeSigningSecret.secret_value
+    }
+  }
 }
 
 resource "aws_lambda_layer_version" "lambda_deps_layer" {
@@ -96,6 +96,19 @@ resource "aws_lambda_layer_version" "lambda_deps_layer" {
     aws_s3_object.lambda_deps_layer_s3_storage,
   ]
 }
+# Create an s3 resource for storing the utils_layer
+resource "aws_lambda_layer_version" "lambda_utils_layer" {
+  layer_name = "shared_utils"
+  s3_bucket  = aws_s3_bucket.dev_stripe_webhook_bucket.id      #conflicts with filename
+  s3_key     = aws_s3_object.lambda_utils_layer_s3_storage.key #conflicts with filename
+  # filename         = data.archive_file.utils_layer_code_zip.output_path
+  source_code_hash = data.archive_file.utils_layer_code_zip.output_base64sha256
+
+  compatible_runtimes = [var.lambda_runtime]
+  depends_on = [
+    aws_s3_object.lambda_utils_layer_s3_storage,
+  ]
+}
 
 #create an s3 resource for storing the deps layer
 resource "aws_s3_object" "lambda_deps_layer_s3_storage" {
@@ -109,6 +122,21 @@ resource "aws_s3_object" "lambda_deps_layer_s3_storage" {
   etag = data.archive_file.deps_layer_code_zip.output_base64sha256
   depends_on = [
     data.archive_file.deps_layer_code_zip,
+  ]
+}
+
+# create an s3 object for storing the utils layer
+resource "aws_s3_object" "lambda_utils_layer_s3_storage" {
+  bucket = aws_s3_bucket.dev_stripe_webhook_bucket.id
+  key    = var.utils_layer_storage_key
+  source = data.archive_file.utils_layer_code_zip.output_path
+
+  # The filemd5() function is available in Terraform 0.11.12 and later
+  # For Terraform 0.11.11 and earlier, use the md5() function and the file() function:
+  # etag = "${md5(file("path/to/file"))}"
+  etag = data.archive_file.utils_layer_code_zip.output_base64sha256
+  depends_on = [
+    data.archive_file.utils_layer_code_zip,
   ]
 }
 

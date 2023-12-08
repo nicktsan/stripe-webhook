@@ -57,3 +57,20 @@ variable "path" {
   description = "last part of the api gateway url"
   type        = string
 }
+
+variable "stripe_secret_key" {
+  description = "Key of the stripe secret stored in hcp vault secrets"
+  type        = string
+  sensitive   = true
+}
+
+variable "stripe_webhook_signing_secret" {
+  description = "Key of the stripe webhook signing secret stored in hcp vault secrets"
+  type        = string
+  sensitive   = true
+}
+
+variable "utils_layer_storage_key" {
+  description = "Key of the S3 object that will store utils lambda layer"
+  type        = string
+}
