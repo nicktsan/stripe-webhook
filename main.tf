@@ -231,9 +231,8 @@ resource "aws_api_gateway_integration" "stripe_webhook_api_integration" {
   http_method             = aws_api_gateway_method.stripe_webhook_api_method.http_method
   integration_http_method = "POST"
   type                    = "AWS"
-  # "uri" : "arn:aws:apigateway:${region}:sqs:path/${account_id}/${sqsname}",
-  uri         = join("", ["arn:aws:apigateway:", var.region, ":sqs:path/", data.aws_caller_identity.current.account_id, "/", aws_sqs_queue.stripe_webhook_sqs.name])
-  credentials = aws_iam_role.stripe_webhook_APIGW_to_SQS_Role.arn
+  uri                     = join("", ["arn:aws:apigateway:", var.region, ":sqs:path/", data.aws_caller_identity.current.account_id, "/", aws_sqs_queue.stripe_webhook_sqs.name])
+  credentials             = aws_iam_role.stripe_webhook_APIGW_to_SQS_Role.arn
   request_parameters = {
     "integration.request.header.Content-Type"                              = "'application/x-www-form-urlencoded'"
     "integration.request.querystring.MessageAttribute.1.Name"              = "'stripeSignature'"
@@ -241,9 +240,9 @@ resource "aws_api_gateway_integration" "stripe_webhook_api_integration" {
     "integration.request.querystring.MessageAttribute.1.Value.StringValue" = "method.request.header.stripe-signature"
   }
   request_templates = {
-    "application/json" = "Action=SendMessage&MessageBody=$input.json('$')"
+    "application/json" = "Action=SendMessage&MessageBody=$util.urlEncode($input.body)"
   }
-  passthrough_behavior = "WHEN_NO_TEMPLATES"
+  passthrough_behavior = "NEVER"
 }
 
 # Configure API Gateway to push all logs to CloudWatch Logs
@@ -259,12 +258,15 @@ resource "aws_api_gateway_method_settings" "StripeWebhookGatewaySettings" {
   }
 }
 
+# Configure API Gateway integration response
 resource "aws_api_gateway_integration_response" "stripe_webhook_api_integration_response" {
   rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
   resource_id = aws_api_gateway_resource.stripe_webhook_api_resource.id
   http_method = aws_api_gateway_method.stripe_webhook_api_method.http_method
   status_code = aws_api_gateway_method_response.stripe_webhook_api_method_response.status_code
 }
+
+# Configure API Gateway method response
 resource "aws_api_gateway_method_response" "stripe_webhook_api_method_response" {
   rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
   resource_id = aws_api_gateway_resource.stripe_webhook_api_resource.id
@@ -274,13 +276,17 @@ resource "aws_api_gateway_method_response" "stripe_webhook_api_method_response" 
     "application/json" = "Empty"
   }
 }
-
+# Forces redeployment of the api gateway after detecting changes
+resource "terraform_data" "stripe_webhook_api_deployment_replacement" {
+  input = var.revision
+}
 # Create a new API Gateway deployment for the created rest api
 resource "aws_api_gateway_deployment" "stripe_webhook_api_deployment" {
   depends_on  = [aws_api_gateway_integration.stripe_webhook_api_integration]
   rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
   lifecycle {
     create_before_destroy = true
+    replace_triggered_by  = [terraform_data.stripe_webhook_api_deployment_replacement]
   }
 }
 

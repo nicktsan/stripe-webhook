@@ -74,3 +74,8 @@ variable "utils_layer_storage_key" {
   description = "Key of the S3 object that will store utils lambda layer"
   type        = string
 }
+
+variable "revision" {
+  description = "Revision of deployment"
+  type        = string
+}
