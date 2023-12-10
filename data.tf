@@ -4,6 +4,12 @@ data "archive_file" "stripe_webhook_lambda_zip" {
   output_path = "${path.module}/lambda/dist/stripe_webhook_lambda.zip"
 }
 
+data "archive_file" "utils_layer_code_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda/dist/layers/util-layer/"
+  output_path = "${path.module}/lambda/dist/utils.zip"
+}
+
 data "archive_file" "deps_layer_code_zip" {
   type        = "zip"
   source_dir  = "${path.module}/lambda/dist/layers/deps-layer/"
@@ -59,4 +65,14 @@ data "template_file" "stripe_webhook_APIGW_logPolicy_template" {
     logGroup = aws_cloudwatch_log_group.stripe_webhook_APIGW_logGroup.arn
     apiarn   = aws_api_gateway_rest_api.stripe_webhook_api.arn
   }
+}
+
+data "hcp_vault_secrets_secret" "stripeSecret" {
+  app_name    = "movie-app"
+  secret_name = var.stripe_secret_key
+}
+
+data "hcp_vault_secrets_secret" "stripeSigningSecret" {
+  app_name    = "movie-app"
+  secret_name = var.stripe_webhook_signing_secret
 }

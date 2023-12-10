@@ -72,15 +72,15 @@ resource "aws_lambda_function" "stripe_webhook_lambda" {
   runtime          = var.lambda_runtime
   layers = [
     aws_lambda_layer_version.lambda_deps_layer.arn,
-    # aws_lambda_layer_version.lambda_utils_layer.arn
+    aws_lambda_layer_version.lambda_utils_layer.arn
   ]
 
-  # environment {
-  #   variables = {
-  #     # STRIPE_SECRET = jsondecode(data.aws_secretsmanager_secret_version.current.secret_string)[var.stripe_secret_key]
-  #     STRIPE_SECRET = data.hcp_vault_secrets_secret.stripeSecret.secret_value
-  #   }
-  # }
+  environment {
+    variables = {
+      STRIPE_SECRET         = data.hcp_vault_secrets_secret.stripeSecret.secret_value
+      STRIPE_SIGNING_SECRET = data.hcp_vault_secrets_secret.stripeSigningSecret.secret_value
+    }
+  }
 }
 
 resource "aws_lambda_layer_version" "lambda_deps_layer" {
@@ -96,6 +96,19 @@ resource "aws_lambda_layer_version" "lambda_deps_layer" {
     aws_s3_object.lambda_deps_layer_s3_storage,
   ]
 }
+# Create an s3 resource for storing the utils_layer
+resource "aws_lambda_layer_version" "lambda_utils_layer" {
+  layer_name = "shared_utils"
+  s3_bucket  = aws_s3_bucket.dev_stripe_webhook_bucket.id      #conflicts with filename
+  s3_key     = aws_s3_object.lambda_utils_layer_s3_storage.key #conflicts with filename
+  # filename         = data.archive_file.utils_layer_code_zip.output_path
+  source_code_hash = data.archive_file.utils_layer_code_zip.output_base64sha256
+
+  compatible_runtimes = [var.lambda_runtime]
+  depends_on = [
+    aws_s3_object.lambda_utils_layer_s3_storage,
+  ]
+}
 
 #create an s3 resource for storing the deps layer
 resource "aws_s3_object" "lambda_deps_layer_s3_storage" {
@@ -109,6 +122,21 @@ resource "aws_s3_object" "lambda_deps_layer_s3_storage" {
   etag = data.archive_file.deps_layer_code_zip.output_base64sha256
   depends_on = [
     data.archive_file.deps_layer_code_zip,
+  ]
+}
+
+# create an s3 object for storing the utils layer
+resource "aws_s3_object" "lambda_utils_layer_s3_storage" {
+  bucket = aws_s3_bucket.dev_stripe_webhook_bucket.id
+  key    = var.utils_layer_storage_key
+  source = data.archive_file.utils_layer_code_zip.output_path
+
+  # The filemd5() function is available in Terraform 0.11.12 and later
+  # For Terraform 0.11.11 and earlier, use the md5() function and the file() function:
+  # etag = "${md5(file("path/to/file"))}"
+  etag = data.archive_file.utils_layer_code_zip.output_base64sha256
+  depends_on = [
+    data.archive_file.utils_layer_code_zip,
   ]
 }
 
@@ -203,9 +231,8 @@ resource "aws_api_gateway_integration" "stripe_webhook_api_integration" {
   http_method             = aws_api_gateway_method.stripe_webhook_api_method.http_method
   integration_http_method = "POST"
   type                    = "AWS"
-  # "uri" : "arn:aws:apigateway:${region}:sqs:path/${account_id}/${sqsname}",
-  uri         = join("", ["arn:aws:apigateway:", var.region, ":sqs:path/", data.aws_caller_identity.current.account_id, "/", aws_sqs_queue.stripe_webhook_sqs.name])
-  credentials = aws_iam_role.stripe_webhook_APIGW_to_SQS_Role.arn
+  uri                     = join("", ["arn:aws:apigateway:", var.region, ":sqs:path/", data.aws_caller_identity.current.account_id, "/", aws_sqs_queue.stripe_webhook_sqs.name])
+  credentials             = aws_iam_role.stripe_webhook_APIGW_to_SQS_Role.arn
   request_parameters = {
     "integration.request.header.Content-Type"                              = "'application/x-www-form-urlencoded'"
     "integration.request.querystring.MessageAttribute.1.Name"              = "'stripeSignature'"
@@ -213,9 +240,9 @@ resource "aws_api_gateway_integration" "stripe_webhook_api_integration" {
     "integration.request.querystring.MessageAttribute.1.Value.StringValue" = "method.request.header.stripe-signature"
   }
   request_templates = {
-    "application/json" = "Action=SendMessage&MessageBody=$input.json('$')"
+    "application/json" = "Action=SendMessage&MessageBody=$util.urlEncode($input.body)"
   }
-  passthrough_behavior = "WHEN_NO_TEMPLATES"
+  passthrough_behavior = "NEVER"
 }
 
 # Configure API Gateway to push all logs to CloudWatch Logs
@@ -231,12 +258,15 @@ resource "aws_api_gateway_method_settings" "StripeWebhookGatewaySettings" {
   }
 }
 
+# Configure API Gateway integration response
 resource "aws_api_gateway_integration_response" "stripe_webhook_api_integration_response" {
   rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
   resource_id = aws_api_gateway_resource.stripe_webhook_api_resource.id
   http_method = aws_api_gateway_method.stripe_webhook_api_method.http_method
   status_code = aws_api_gateway_method_response.stripe_webhook_api_method_response.status_code
 }
+
+# Configure API Gateway method response
 resource "aws_api_gateway_method_response" "stripe_webhook_api_method_response" {
   rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
   resource_id = aws_api_gateway_resource.stripe_webhook_api_resource.id
@@ -246,13 +276,17 @@ resource "aws_api_gateway_method_response" "stripe_webhook_api_method_response" 
     "application/json" = "Empty"
   }
 }
-
+# Forces redeployment of the api gateway after detecting changes
+resource "terraform_data" "stripe_webhook_api_deployment_replacement" {
+  input = var.revision
+}
 # Create a new API Gateway deployment for the created rest api
 resource "aws_api_gateway_deployment" "stripe_webhook_api_deployment" {
   depends_on  = [aws_api_gateway_integration.stripe_webhook_api_integration]
   rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
   lifecycle {
     create_before_destroy = true
+    replace_triggered_by  = [terraform_data.stripe_webhook_api_deployment_replacement]
   }
 }
 

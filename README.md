@@ -22,6 +22,8 @@ Use yarn build, yarn lint, yarn package, and yarn deploy
 switch to new workspace:
 terraform workspace new <workspace name>
 
+If you want to force terraform to redeploy the API Gateway, you can manually change the "revision" variable in input.tfvars before running terraform init
+
 Then run:
     terraform init
 
