@@ -28,6 +28,11 @@ variable "stripe_webhook_sqs_to_lambda_policy_name" {
   type        = string
 }
 
+variable "event_bridge_put_events_policy_name" {
+  description = "Name of the policy to send messages to Eventbridge"
+  type        = string
+}
+
 variable "stripe_webhook_APIGW_to_SQS_Role_name" {
   description = "Name of the role for API Gateway to send messages to SQS"
   type        = string
@@ -75,7 +80,17 @@ variable "utils_layer_storage_key" {
   type        = string
 }
 
-variable "revision" {
-  description = "Revision of deployment"
+# variable "revision" {
+#   description = "Revision of deployment"
+#   type        = string
+# }
+
+variable "event_bus_name" {
+  description = "Name of the Eventbridge event bus"
+  type        = string
+}
+
+variable "stripe_lambda_event_source" {
+  description = "value of 'Source' parameter in index.ts"
   type        = string
 }

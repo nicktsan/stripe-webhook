@@ -12,6 +12,7 @@
     "@swc/jest": "^0.2.29",
     "@types/aws-lambda": "^8.10.129",
     "@types/jest": "^29.5.10",
+    "@types/node": "^20.10.4",
     "@typescript-eslint/eslint-plugin": "^6.12.0",
     "@typescript-eslint/parser": "^6.12.0",
     "eslint": "^8.54.0",
@@ -22,10 +23,11 @@
     "build": "rm -rf dist && npx swc ./src -d ./dist --ignore \"**/*.test.ts,**/__test__/**\"",
     "test": "jest --clearCache --coverage",
     "lint": "eslint \"src/**/*.{json,js,jsx,ts,tsx}\" && tsc --noemit",
-    "package": "mkdir -p dist/layers/deps-layer/nodejs && mkdir -p dist/layers/util-layer/nodejs && mkdir -p dist/handlers/stripe_webhook_lambda && cp package*.json dist/layers/deps-layer/nodejs && cp yarn.lock dist/layers/deps-layer/nodejs && mv dist/layers/util-layer/utils.js* dist/layers/util-layer/nodejs && cd dist/layers/deps-layer/nodejs && yarn --modules-folder node_modules --frozen-lockfile",
+    "package": "mkdir -p dist/layers/deps-layer/nodejs && mkdir -p dist/layers/util-layer/nodejs && mkdir -p dist/handlers/stripe_webhook_lambda && cp package*.json dist/layers/deps-layer/nodejs && cp yarn.lock dist/layers/deps-layer/nodejs && mv dist/layers/util-layer/utils.js* dist/layers/util-layer/nodejs && cd dist/layers/deps-layer/nodejs && yarn --modules-folder node_modules --frozen-lockfile --production=true",
     "deploy": "terraform -chdir=infrastructure apply"
   },
   "dependencies": {
+    "aws-sdk": "^2.1516.0",
     "stripe": "^14.8.0"
   }
 }
