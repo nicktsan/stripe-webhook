@@ -1,5 +1,19 @@
 import Stripe from "stripe";
 import { SQSRecord } from "aws-lambda";
+import AWS from "aws-sdk"
+
+const getEventbridge = (eventbridge: AWS.EventBridge | null): AWS.EventBridge | null => {
+    //if no stripe instance, instantiate a new stripe instance. Otherwise, return the existing stripe instance without
+    //instantiating a new one.
+    if (!eventbridge) {
+        eventbridge = new AWS.EventBridge()
+        // console.log("Instantiated a new Eventbridge object.")
+    } else {
+        // console.log("Found an existing Eventbridge object instance.")
+    }
+    return eventbridge;
+};
+
 const getStripe = (stripe: Stripe | null): Stripe | null => {
     //if no stripe instance, instantiate a new stripe instance. Otherwise, return the existing stripe instance without
     //instantiating a new one.
@@ -16,7 +30,6 @@ const getStripe = (stripe: Stripe | null): Stripe | null => {
 
 //Ensures the message is a genuine stripe message
 async function verifyMessageAsync(message: SQSRecord, stripe: Stripe | null): Promise<boolean> {
-    // try {
     const payload = message.body;
     const sig = message.messageAttributes.stripeSignature.stringValue
     console.log('message attributes ', message.messageAttributes);
@@ -34,4 +47,4 @@ async function verifyMessageAsync(message: SQSRecord, stripe: Stripe | null): Pr
     return true
 }
 
-export { getStripe, verifyMessageAsync }
+export { getEventbridge, getStripe, verifyMessageAsync }

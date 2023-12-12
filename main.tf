@@ -50,6 +50,9 @@ resource "aws_iam_policy" "stripe_webhook_sqs_to_lambda_policy" {
   path        = "/"
   description = "IAM policy to provide receive message, delete message, and read attribute access to SQS queues"
   policy      = data.template_file.stripe_webhook_sqs_to_lambda_policy_template.rendered
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 #attach stripe_webhook_sqs_to_lambda_policy to stripe_webhook_sqs_to_lambda_to_eventbridge_role
@@ -58,7 +61,7 @@ resource "aws_iam_role_policy_attachment" "attach_stripe_webhook_sqs_to_lambda_p
   policy_arn = aws_iam_policy.stripe_webhook_sqs_to_lambda_policy.arn
 }
 
-#lambda to receive message from sqs
+# lambda to receive message from sqs
 resource "aws_lambda_function" "stripe_webhook_lambda" {
   filename      = data.archive_file.stripe_webhook_lambda_zip.output_path
   function_name = "stripe_webhook_lambda"
@@ -77,8 +80,10 @@ resource "aws_lambda_function" "stripe_webhook_lambda" {
 
   environment {
     variables = {
-      STRIPE_SECRET         = data.hcp_vault_secrets_secret.stripeSecret.secret_value
-      STRIPE_SIGNING_SECRET = data.hcp_vault_secrets_secret.stripeSigningSecret.secret_value
+      STRIPE_SECRET              = data.hcp_vault_secrets_secret.stripeSecret.secret_value
+      STRIPE_SIGNING_SECRET      = data.hcp_vault_secrets_secret.stripeSigningSecret.secret_value
+      STRIPE_EVENT_BUS           = var.event_bus_name
+      STRIPE_LAMBDA_EVENT_SOURCE = var.stripe_lambda_event_source
     }
   }
 }
@@ -191,6 +196,9 @@ resource "aws_iam_policy" "stripe_webhook_APIGW_to_SQS_Policy" {
   path        = "/"
   description = "IAM policy to for API Gateway to send messages to SQS"
   policy      = data.template_file.stripe_webhook_APIGW_to_SQS_Policy_template.rendered
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Attach the IAM stripe_webhook_APIGW_to_SQS_Policy to stripe_webhook_APIGW_to_SQS_Role
@@ -277,16 +285,33 @@ resource "aws_api_gateway_method_response" "stripe_webhook_api_method_response" 
   }
 }
 # Forces redeployment of the api gateway after detecting changes
-resource "terraform_data" "stripe_webhook_api_deployment_replacement" {
-  input = var.revision
-}
+# resource "terraform_data" "stripe_webhook_api_deployment_replacement" {
+#   input = var.revision
+# }
 # Create a new API Gateway deployment for the created rest api
 resource "aws_api_gateway_deployment" "stripe_webhook_api_deployment" {
   depends_on  = [aws_api_gateway_integration.stripe_webhook_api_integration]
   rest_api_id = aws_api_gateway_rest_api.stripe_webhook_api.id
+
+  #Trigger API Gateway redeployment based on changes to the following resources
+  triggers = {
+    # NOTE: The configuration below will satisfy ordering considerations,
+    #       but not pick up all future REST API changes. More advanced patterns
+    #       are possible, such as using the filesha1() function against the
+    #       Terraform configuration file(s) or removing the .id references to
+    #       calculate a hash against whole resources. Be aware that using whole
+    #       resources will show a difference after the initial implementation.
+    #       It will stabilize to only change when resources change afterwards.
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.stripe_webhook_api_resource.id,
+      aws_api_gateway_method.stripe_webhook_api_method.id,
+      aws_api_gateway_integration.stripe_webhook_api_integration.id,
+    ]))
+  }
+
   lifecycle {
     create_before_destroy = true
-    replace_triggered_by  = [terraform_data.stripe_webhook_api_deployment_replacement]
+    # replace_triggered_by  = [terraform_data.stripe_webhook_api_deployment_replacement]
   }
 }
 
@@ -324,4 +349,48 @@ resource "aws_api_gateway_stage" "StripeWebhookGatewayStage" {
       "\"integrationerror\":\"$context.integration.error\"",
     "\"integrationErrorMessage\":\"$context.integrationErrorMessage\" }"])
   }
+}
+
+# Create the custom Eventbridge event bus
+resource "aws_cloudwatch_event_bus" "stripe_webhook_event_bus" {
+  name = var.event_bus_name
+}
+
+#IAM policy for Lambda to send events to eventbridge
+resource "aws_iam_policy" "event_bridge_put_events_policy" {
+  name        = var.event_bridge_put_events_policy_name
+  path        = "/"
+  description = "IAM policy to send events to eventbridge"
+  policy      = data.template_file.event_bridge_put_events_policy_template.rendered
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+#attach both IAM Policy and IAM Role to each other:
+resource "aws_iam_role_policy_attachment" "attach_event_bridge_put_events_policy_for_lambda" {
+  role       = aws_iam_role.stripe_webhook_sqs_to_lambda_to_eventbridge_role.name
+  policy_arn = aws_iam_policy.event_bridge_put_events_policy.arn
+}
+
+# Create a Log Group for Eventbridge to push logs to
+resource "aws_cloudwatch_log_group" "stripe_webhook_eventbridge_log_group" {
+  name_prefix = "/aws/stripe-webhook-eventbridge/terraform"
+}
+
+# Create a Log Policy to allow Cloudwatch to Create log streams and put logs
+resource "aws_cloudwatch_log_resource_policy" "stripe_webhook_eventbridge_log_groupPolicy" {
+  policy_name     = "Terraform-stripe_webhook_eventbridge_log_groupPolicy-${data.aws_caller_identity.current.account_id}"
+  policy_document = data.template_file.stripe_webhook_eventbridge_log_groupPolicy_template.rendered
+}
+
+#Create a new Event Rule
+resource "aws_cloudwatch_event_rule" "stripe_webhook_eventbridge_event_rule" {
+  event_pattern = data.template_file.stripe_webhook_eventbridge_event_rule_pattern_template.rendered
+}
+
+#Set the log group as a target for the Eventbridge rule
+resource "aws_cloudwatch_event_target" "stripe_webhook_eventbridge_log_group_target" {
+  rule = aws_cloudwatch_event_rule.stripe_webhook_eventbridge_event_rule.name
+  arn  = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.arn
 }

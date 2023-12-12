@@ -1,4 +1,4 @@
-A solution that handles stripe webhooks by using AWS http API Gateway, SQS, SQS dead letter queue, and Lambda
+A solution that handles stripe webhooks by using AWS http API Gateway, SQS, SQS dead letter queue, and Lambda. It is the main way for https://github.com/nicktsan/movies_frontend_nextjs to fulfill orders.
 
 Make sure to set up STRIPE_API_KEY environment variable
 Console Command Example: export STRIPE_API_KEY="<api-key>"
@@ -17,7 +17,10 @@ export AWS_ACCESS_KEY_ID=<your aws access key>
 export AWS_SECRET_ACCESS_KEY=<your aws secret access key>
 check AWS environment variables: printenv | grep AWS_
 
-Use yarn build, yarn lint, yarn package, and yarn deploy
+Before using terraform commands to init, plan, and deploy, switch to the /lambda directory and run the following
+yarn commands:
+
+yarn build, yarn lint, yarn package
 
 switch to new workspace:
 terraform workspace new <workspace name>
