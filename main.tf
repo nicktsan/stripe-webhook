@@ -80,6 +80,7 @@ resource "aws_lambda_function" "stripe_webhook_lambda" {
 
   environment {
     variables = {
+      # DETAIL_TYPE                = var.detail_type
       STRIPE_SECRET              = data.hcp_vault_secrets_secret.stripeSecret.secret_value
       STRIPE_SIGNING_SECRET      = data.hcp_vault_secrets_secret.stripeSigningSecret.secret_value
       STRIPE_EVENT_BUS           = var.event_bus_name
@@ -386,11 +387,13 @@ resource "aws_cloudwatch_log_resource_policy" "stripe_webhook_eventbridge_log_gr
 
 #Create a new Event Rule
 resource "aws_cloudwatch_event_rule" "stripe_webhook_eventbridge_event_rule" {
-  event_pattern = data.template_file.stripe_webhook_eventbridge_event_rule_pattern_template.rendered
+  event_pattern  = data.template_file.stripe_webhook_eventbridge_event_rule_pattern_template.rendered
+  event_bus_name = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
 }
 
 #Set the log group as a target for the Eventbridge rule
 resource "aws_cloudwatch_event_target" "stripe_webhook_eventbridge_log_group_target" {
-  rule = aws_cloudwatch_event_rule.stripe_webhook_eventbridge_event_rule.name
-  arn  = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.arn
+  rule           = aws_cloudwatch_event_rule.stripe_webhook_eventbridge_event_rule.name
+  arn            = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.arn
+  event_bus_name = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
 }

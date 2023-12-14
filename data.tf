@@ -42,7 +42,7 @@ data "template_file" "event_bridge_put_events_policy_template" {
   template = file("./template/event_bridge_put_events_policy.tpl")
 
   vars = {
-    eventbridgeArn = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
+    eventBusArn = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
   }
 }
 

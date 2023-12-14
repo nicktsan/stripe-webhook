@@ -94,3 +94,8 @@ variable "stripe_lambda_event_source" {
   description = "value of 'Source' parameter in index.ts"
   type        = string
 }
+
+# variable "detail_type" {
+#   description = "DetailType in eventbridge message sent to eventbridge from lambda"
+#   type        = string
+# }
