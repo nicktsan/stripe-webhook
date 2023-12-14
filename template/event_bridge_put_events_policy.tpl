@@ -6,7 +6,7 @@
       "Action" : [
         "events:PutEvents"
       ],
-      "Resource" : "${eventbridgeArn}"
+      "Resource" : "${eventBusArn}"
     }
   ]
 }

@@ -26,6 +26,9 @@ const handler: SQSHandler = async (event: SQSEvent/*, context: Context*/): Promi
                 console.log("Message not from Stripe")
             } else {
                 console.log("Stripe verification successful. Publishing message to Eventbridge.")
+                const payload = JSON.parse(message.body);
+                const eventType = payload.type
+                console.log("eventType ", eventType)
                 const params = {
                     Entries: [
                         {
@@ -35,8 +38,9 @@ const handler: SQSHandler = async (event: SQSEvent/*, context: Context*/): Promi
                                     "enrich": true,
                                 },
                                 "data": message,
+                                "stripeSignature": message.messageAttributes.stripeSignature.stringValue
                             }),
-                            DetailType: 'Message',
+                            DetailType: eventType, //process.env.DETAIL_TYPE,
                             EventBusName: process.env.STRIPE_EVENT_BUS,
                             Source: process.env.STRIPE_LAMBDA_EVENT_SOURCE,
                             Time: new Date
