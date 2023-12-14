@@ -387,6 +387,7 @@ resource "aws_cloudwatch_log_resource_policy" "stripe_webhook_eventbridge_log_gr
 
 #Create a new Event Rule
 resource "aws_cloudwatch_event_rule" "stripe_webhook_eventbridge_event_rule" {
+  name           = var.stripe_webhook_eventbridge_event_rule_name
   event_pattern  = data.template_file.stripe_webhook_eventbridge_event_rule_pattern_template.rendered
   event_bus_name = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
 }
