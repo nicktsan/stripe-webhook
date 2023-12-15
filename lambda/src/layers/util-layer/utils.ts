@@ -3,7 +3,7 @@ import { SQSRecord } from "aws-lambda";
 import AWS from "aws-sdk"
 
 const getEventbridge = (eventbridge: AWS.EventBridge | null): AWS.EventBridge | null => {
-    //if no stripe instance, instantiate a new stripe instance. Otherwise, return the existing stripe instance without
+    //if no eventbridge instance, instantiate a new eventbridge instance. Otherwise, return the existing eventbridge instance without
     //instantiating a new one.
     if (!eventbridge) {
         eventbridge = new AWS.EventBridge()
@@ -37,6 +37,7 @@ async function verifyMessageAsync(message: SQSRecord, stripe: Stripe | null): Pr
     console.log(`Processed message ${payload}`);
     let event;
     try {
+        //Use Stripe's constructEvent method to verify the message
         event = stripe?.webhooks.constructEvent(payload, sig!, process.env.STRIPE_SIGNING_SECRET!);
     } catch (err: unknown) {
         if (err instanceof Error) {

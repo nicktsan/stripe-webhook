@@ -11,7 +11,9 @@ AWS.config.update({ region: process.env.AWS_REGION })
 let eventbridge: AWS.EventBridge | null;
 
 const handler: SQSHandler = async (event: SQSEvent/*, context: Context*/): Promise<void> => {
+    //If there is no stripe instance, create a new one. Otherwise, use the existing one.
     stripe = getStripe(stripe);
+    //If there is no eventbridge instance, create a new one. Otherwise, use the existing one.
     eventbridge = getEventbridge(eventbridge);
     if (!stripe) {
         console.info("stripe is null. Nothing processed.")
@@ -20,7 +22,9 @@ const handler: SQSHandler = async (event: SQSEvent/*, context: Context*/): Promi
         console.info("Eventbridge is null. Nothing processed.")
     }
     else {
+        //loop through each message from the SQSEvent
         for (const message of event.Records) {
+            //Ensure the message comes from Stripe.
             const verified = await verifyMessageAsync(message, stripe);
             if (!verified) {
                 console.log("Message not from Stripe")
@@ -47,6 +51,7 @@ const handler: SQSHandler = async (event: SQSEvent/*, context: Context*/): Promi
                         }
                     ]
                 }
+                //Send the events to eventbridge
                 const result = await eventbridge.putEvents(params).promise()
                 console.log(result)
             }
