@@ -37,7 +37,7 @@ const handler: SQSHandler = async (event: SQSEvent/*, context: Context*/): Promi
                                     // enriched flag set
                                     "enrich": true,
                                 },
-                                "data": message,
+                                "data": message.body,
                                 "stripeSignature": message.messageAttributes.stripeSignature.stringValue
                             }),
                             DetailType: eventType, //process.env.DETAIL_TYPE,
