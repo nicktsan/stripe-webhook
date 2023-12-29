@@ -375,26 +375,28 @@ resource "aws_iam_role_policy_attachment" "attach_event_bridge_put_events_policy
 }
 
 # Create a Log Group for Eventbridge to push logs to
-resource "aws_cloudwatch_log_group" "stripe_webhook_eventbridge_log_group" {
-  name_prefix = "/aws/stripe-webhook-eventbridge/terraform"
-}
+# resource "aws_cloudwatch_log_group" "stripe_webhook_eventbridge_log_group" {
+#   name_prefix = "/aws/stripe-webhook-eventbridge/terraform"
+# }
 
 # Create a Log Policy to allow Cloudwatch to Create log streams and put logs
-resource "aws_cloudwatch_log_resource_policy" "stripe_webhook_eventbridge_log_groupPolicy" {
-  policy_name     = "Terraform-stripe_webhook_eventbridge_log_groupPolicy-${data.aws_caller_identity.current.account_id}"
-  policy_document = data.template_file.stripe_webhook_eventbridge_log_groupPolicy_template.rendered
-}
+# resource "aws_cloudwatch_log_resource_policy" "stripe_webhook_eventbridge_log_groupPolicy" {
+#   policy_name     = "Terraform-stripe_webhook_eventbridge_log_groupPolicy-${data.aws_caller_identity.current.account_id}"
+#   policy_document = data.template_file.stripe_webhook_eventbridge_log_groupPolicy_template.rendered
+# }
 
 #Create a new Event Rule
-resource "aws_cloudwatch_event_rule" "stripe_webhook_eventbridge_event_rule" {
-  name           = var.stripe_webhook_eventbridge_event_rule_name
-  event_pattern  = data.template_file.stripe_webhook_eventbridge_event_rule_pattern_template.rendered
-  event_bus_name = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
-}
+# resource "aws_cloudwatch_event_rule" "stripe_webhook_eventbridge_event_rule" {
+#   name           = var.stripe_webhook_eventbridge_event_rule_name
+#   event_pattern  = data.template_file.stripe_webhook_eventbridge_event_rule_pattern_template.rendered
+#   event_bus_name = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
+# }
 
 #Set the log group as a target for the Eventbridge rule
-resource "aws_cloudwatch_event_target" "stripe_webhook_eventbridge_log_group_target" {
-  rule           = aws_cloudwatch_event_rule.stripe_webhook_eventbridge_event_rule.name
-  arn            = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.arn
-  event_bus_name = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
-}
+# resource "aws_cloudwatch_event_target" "stripe_webhook_eventbridge_log_group_target" {
+#   rule           = aws_cloudwatch_event_rule.stripe_webhook_eventbridge_event_rule.name
+#   arn            = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.arn
+#   event_bus_name = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
+# }
+
+#TODO implement alarm for DLQ

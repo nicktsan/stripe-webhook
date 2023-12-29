@@ -21,7 +21,7 @@ output "Test-Command2" {
 }
 
 #output the CloudWatch Log Stream Name
-output "eventbridge-Logs-Stream-Name" {
-  value       = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.id
-  description = "The CloudWatch Log Group Name"
-}
+# output "eventbridge-Logs-Stream-Name" {
+#   value       = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.id
+#   description = "The CloudWatch Log Group Name"
+# }
