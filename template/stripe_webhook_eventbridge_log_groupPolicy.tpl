@@ -11,10 +11,22 @@
           ]
       },
       "Action": [
-        "logs:CreateLogStream",
+        "logs:CreateLogStream"
+        ],
+      "Resource": "${logGroup}:*"
+    }
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": [ 
+          "events.amazonaws.com",
+          "delivery.logs.amazonaws.com"
+          ]
+      },
+      "Action": [
         "logs:PutLogEvents"
         ],
-      "Resource": "${logGroup}",
+      "Resource": "${logGroup}:*:*",
       "Condition": {
         "ArnEquals": {
           "aws:SourceArn": "${eventRuleArn}"

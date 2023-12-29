@@ -99,14 +99,14 @@ data "hcp_vault_secrets_secret" "stripeSigningSecret" {
 }
 
 # template for the cloudwatch logging policy for eventbridge
-data "template_file" "stripe_webhook_eventbridge_log_groupPolicy_template" {
-  template = file("./template/stripe_webhook_eventbridge_log_groupPolicy.tpl")
-
-  vars = {
-    logGroup     = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.arn
-    eventRuleArn = aws_cloudwatch_event_rule.stripe_webhook_eventbridge_event_rule.arn
-  }
-}
+# data "template_file" "stripe_webhook_eventbridge_log_groupPolicy_template" {
+#   template = file("./template/stripe_webhook_eventbridge_log_groupPolicy.tpl")
+#   todo fix template to allow for logging
+#   vars = {
+#     logGroup     = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.arn
+#     eventRuleArn = aws_cloudwatch_event_rule.stripe_webhook_eventbridge_event_rule.arn
+#   }
+# }
 
 data "template_file" "stripe_webhook_eventbridge_event_rule_pattern_template" {
   template = file("./template/stripe_webhook_eventbridge_event_rule_pattern.tpl")

@@ -380,10 +380,10 @@ resource "aws_cloudwatch_log_group" "stripe_webhook_eventbridge_log_group" {
 }
 
 # Create a Log Policy to allow Cloudwatch to Create log streams and put logs
-resource "aws_cloudwatch_log_resource_policy" "stripe_webhook_eventbridge_log_groupPolicy" {
-  policy_name     = "Terraform-stripe_webhook_eventbridge_log_groupPolicy-${data.aws_caller_identity.current.account_id}"
-  policy_document = data.template_file.stripe_webhook_eventbridge_log_groupPolicy_template.rendered
-}
+# resource "aws_cloudwatch_log_resource_policy" "stripe_webhook_eventbridge_log_groupPolicy" {
+#   policy_name     = "Terraform-stripe_webhook_eventbridge_log_groupPolicy-${data.aws_caller_identity.current.account_id}"
+#   policy_document = data.template_file.stripe_webhook_eventbridge_log_groupPolicy_template.rendered
+# }
 
 #Create a new Event Rule
 resource "aws_cloudwatch_event_rule" "stripe_webhook_eventbridge_event_rule" {
@@ -398,3 +398,5 @@ resource "aws_cloudwatch_event_target" "stripe_webhook_eventbridge_log_group_tar
   arn            = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.arn
   event_bus_name = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
 }
+
+#TODO implement alarm for DLQ
