@@ -100,7 +100,7 @@ variable "stripe_lambda_event_source" {
 #   type        = string
 # }
 
-variable "stripe_webhook_eventbridge_event_rule_name" {
-  description = "Name of stripe_webhook_eventbridge_event_rule"
-  type        = string
-}
+# variable "stripe_webhook_eventbridge_event_rule_name" {
+#   description = "Name of stripe_webhook_eventbridge_event_rule"
+#   type        = string
+# }
