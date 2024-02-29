@@ -80,11 +80,6 @@ variable "utils_layer_storage_key" {
   type        = string
 }
 
-# variable "revision" {
-#   description = "Revision of deployment"
-#   type        = string
-# }
-
 variable "event_bus_name" {
   description = "Name of the Eventbridge event bus"
   type        = string
@@ -94,13 +89,3 @@ variable "stripe_lambda_event_source" {
   description = "value of 'Source' parameter in index.ts"
   type        = string
 }
-
-# variable "detail_type" {
-#   description = "DetailType in eventbridge message sent to eventbridge from lambda"
-#   type        = string
-# }
-
-# variable "stripe_webhook_eventbridge_event_rule_name" {
-#   description = "Name of stripe_webhook_eventbridge_event_rule"
-#   type        = string
-# }

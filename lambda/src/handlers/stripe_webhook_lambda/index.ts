@@ -44,7 +44,7 @@ const handler: SQSHandler = async (event: SQSEvent/*, context: Context*/): Promi
                                 "data": message.body,
                                 "stripeSignature": message.messageAttributes.stripeSignature.stringValue
                             }),
-                            DetailType: eventType, //process.env.DETAIL_TYPE,
+                            DetailType: eventType,
                             EventBusName: process.env.STRIPE_EVENT_BUS,
                             Source: process.env.STRIPE_LAMBDA_EVENT_SOURCE,
                             Time: new Date

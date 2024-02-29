@@ -60,19 +60,6 @@ data "template_file" "stripe_webhook_APIGW_to_SQS_Policy_template" {
   }
 }
 
-# template file for an open api definition of the stripe webhook
-data "template_file" "stripe_webhook_api_body" {
-  template = file("./template/stripe_webhook_api_body.tpl")
-
-  vars = {
-    apigwVersion = var.apigwVersion
-    APIGWRole    = aws_iam_role.stripe_webhook_APIGW_to_SQS_Role.arn
-    region       = var.region
-    account_id   = data.aws_caller_identity.current.account_id
-    sqsname      = aws_sqs_queue.stripe_webhook_sqs.name
-  }
-}
-
 # initialize the current caller to get their account number information
 data "aws_caller_identity" "current" {}
 
@@ -98,21 +85,10 @@ data "hcp_vault_secrets_secret" "stripeSigningSecret" {
   secret_name = var.stripe_webhook_signing_secret
 }
 
-# template for the cloudwatch logging policy for eventbridge
-# data "template_file" "stripe_webhook_eventbridge_log_groupPolicy_template" {
-#   template = file("./template/stripe_webhook_eventbridge_log_groupPolicy.tpl")
-#   todo fix template to allow for logging
-#   vars = {
-#     logGroup     = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.arn
-#     eventRuleArn = aws_cloudwatch_event_rule.stripe_webhook_eventbridge_event_rule.arn
-#   }
-# }
-
 data "template_file" "stripe_webhook_eventbridge_event_rule_pattern_template" {
   template = file("./template/stripe_webhook_eventbridge_event_rule_pattern.tpl")
 
   vars = {
-    # account_id  = data.aws_caller_identity.current.account_id
     eventSource = var.stripe_lambda_event_source
   }
 }
