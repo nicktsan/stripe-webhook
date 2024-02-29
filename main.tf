@@ -80,7 +80,6 @@ resource "aws_lambda_function" "stripe_webhook_lambda" {
 
   environment {
     variables = {
-      # DETAIL_TYPE                = var.detail_type
       STRIPE_SECRET              = data.hcp_vault_secrets_secret.stripeSecret.secret_value
       STRIPE_SIGNING_SECRET      = data.hcp_vault_secrets_secret.stripeSigningSecret.secret_value
       STRIPE_EVENT_BUS           = var.event_bus_name
@@ -173,16 +172,6 @@ resource "aws_lambda_event_source_mapping" "example" {
   event_source_arn        = aws_sqs_queue.stripe_webhook_sqs.arn
   function_name           = aws_lambda_function.stripe_webhook_lambda.arn
   function_response_types = ["ReportBatchItemFailures"]
-  # filter_criteria {
-  #   filter {
-  #     pattern = jsonencode({
-  #       body = {
-  #         Temperature : [{ numeric : [">", 0, "<=", 100] }]
-  #         Location : ["New York"]
-  #       }
-  #     })
-  #   }
-  # }
 }
 
 # Create an IAM role for API Gateway
@@ -210,8 +199,7 @@ resource "aws_iam_role_policy_attachment" "APIGWPolicyAttachment" {
 
 # Create an HTTP API Gateway
 resource "aws_api_gateway_rest_api" "stripe_webhook_api" {
-  name = "stripe-webhook-http-api"
-  # body = data.template_file.stripe_webhook_api_body.rendered
+  name        = "stripe-webhook-http-api"
   description = "stripe webhook"
 }
 
@@ -285,10 +273,7 @@ resource "aws_api_gateway_method_response" "stripe_webhook_api_method_response" 
     "application/json" = "Empty"
   }
 }
-# Forces redeployment of the api gateway after detecting changes
-# resource "terraform_data" "stripe_webhook_api_deployment_replacement" {
-#   input = var.revision
-# }
+
 # Create a new API Gateway deployment for the created rest api
 resource "aws_api_gateway_deployment" "stripe_webhook_api_deployment" {
   depends_on  = [aws_api_gateway_integration.stripe_webhook_api_integration]
@@ -373,30 +358,5 @@ resource "aws_iam_role_policy_attachment" "attach_event_bridge_put_events_policy
   role       = aws_iam_role.stripe_webhook_sqs_to_lambda_to_eventbridge_role.name
   policy_arn = aws_iam_policy.event_bridge_put_events_policy.arn
 }
-
-# Create a Log Group for Eventbridge to push logs to
-# resource "aws_cloudwatch_log_group" "stripe_webhook_eventbridge_log_group" {
-#   name_prefix = "/aws/stripe-webhook-eventbridge/terraform"
-# }
-
-# Create a Log Policy to allow Cloudwatch to Create log streams and put logs
-# resource "aws_cloudwatch_log_resource_policy" "stripe_webhook_eventbridge_log_groupPolicy" {
-#   policy_name     = "Terraform-stripe_webhook_eventbridge_log_groupPolicy-${data.aws_caller_identity.current.account_id}"
-#   policy_document = data.template_file.stripe_webhook_eventbridge_log_groupPolicy_template.rendered
-# }
-
-#Create a new Event Rule
-# resource "aws_cloudwatch_event_rule" "stripe_webhook_eventbridge_event_rule" {
-#   name           = var.stripe_webhook_eventbridge_event_rule_name
-#   event_pattern  = data.template_file.stripe_webhook_eventbridge_event_rule_pattern_template.rendered
-#   event_bus_name = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
-# }
-
-#Set the log group as a target for the Eventbridge rule
-# resource "aws_cloudwatch_event_target" "stripe_webhook_eventbridge_log_group_target" {
-#   rule           = aws_cloudwatch_event_rule.stripe_webhook_eventbridge_event_rule.name
-#   arn            = aws_cloudwatch_log_group.stripe_webhook_eventbridge_log_group.arn
-#   event_bus_name = aws_cloudwatch_event_bus.stripe_webhook_event_bus.arn
-# }
 
 #TODO implement alarm for DLQ
