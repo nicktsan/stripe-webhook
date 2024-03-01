@@ -146,7 +146,7 @@ resource "aws_s3_object" "lambda_utils_layer_s3_storage" {
 }
 
 resource "aws_s3_bucket" "dev_stripe_webhook_bucket" {
-  bucket = "movies-stripe-webhook-bucket"
+  bucket = "movies-stripe-webhook-bucket2"
 
   tags = {
     Name        = "My stripe_webhook dev bucket"
@@ -272,6 +272,9 @@ resource "aws_api_gateway_method_response" "stripe_webhook_api_method_response" 
   response_models = {
     "application/json" = "Empty"
   }
+  depends_on = [
+    aws_api_gateway_integration.stripe_webhook_api_integration
+  ]
 }
 
 # Create a new API Gateway deployment for the created rest api

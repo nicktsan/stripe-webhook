@@ -12,9 +12,6 @@ Read the Terraform/AWS setup tutorials at https://developer.hashicorp.com/terraf
 
 A solution that handles stripe webhooks by using AWS http API Gateway, SQS, SQS dead letter queue, and Lambda. It is the main way for https://github.com/nicktsan/movies_frontend_nextjs to fulfill orders. It will send events to https://github.com/nicktsan/movie-ownership-crud for processing movie ownership
 
-Make sure to set up STRIPE_API_KEY environment variable
-Console Command Example: export STRIPE_API_KEY="<api-key>"
-
 Configure hashicorp vault: https://developer.hashicorp.com/vault/tutorials/hcp-vault-secrets-get-started/hcp-vault-secrets-install-cli
 Make sure to setup and store the stripe api key secret and stripe webhook signing secret in hcp vaults
 export HCP_CLIENT_ID=<copied-id>
